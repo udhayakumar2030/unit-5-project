@@ -1,0 +1,429 @@
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+struct Student
+{
+    int roll;
+    char name[50];
+    char department[30];
+    int year;
+    float marks;
+    char grade[5];
+};
+
+struct Student *s;
+int count = 0;
+int capacity = 2;
+
+char getGrade(float marks)
+{
+    if (marks >= 90)
+        return 'A';
+    else if (marks >= 75)
+        return 'B';
+    else if (marks >= 60)
+        return 'C';
+    else if (marks >= 50)
+        return 'D';
+    else
+        return 'F';
+}
+
+// Save records in binary and text files
+void saveRecords()
+{
+    FILE *fp;
+    FILE *ft;
+
+    fp = fopen("students.dat", "wb");
+
+    if (fp == NULL)
+    {
+        printf("Error opening binary file!\n");
+        return;
+    }
+
+    fwrite(s, sizeof(struct Student), count, fp);
+    fclose(fp);
+
+    ft = fopen("students.txt", "w");
+
+    if (ft == NULL)
+    {
+        printf("Error opening text file!\n");
+        return;
+    }
+
+    for (int i = 0; i < count; i++)
+    {
+        fprintf(ft, "%d %s %s %d %.2f %s\n",
+                s[i].roll, s[i].name,
+                s[i].department, s[i].year,
+                s[i].marks, s[i].grade);
+    }
+
+    fclose(ft);
+}
+
+// Load records from binary file
+void loadRecords()
+{
+    FILE *fp;
+    struct Student temp;
+
+    fp = fopen("students.dat", "rb");
+
+    if (fp == NULL)
+        return;
+
+    while (fread(&temp, sizeof(struct Student), 1, fp) == 1)
+    {
+        if (count == capacity)
+        {
+            capacity *= 2;
+            struct Student *p = realloc(s, capacity * sizeof(struct Student));
+
+            if (p == NULL)
+            {
+                printf("Memory allocation failed!\n");
+                fclose(fp);
+                return;
+            }
+
+            s = p;
+        }
+
+        s[count++] = temp;
+    }
+
+    fclose(fp);
+}
+
+// Add student
+void addStudent()
+{
+    int roll;
+
+    if (count == capacity)
+    {
+        capacity *= 2;
+
+        struct Student *p = realloc(s, capacity * sizeof(struct Student));
+
+        if (p == NULL)
+        {
+            printf("Memory allocation failed!\n");
+            return;
+        }
+
+        s = p;
+    }
+
+    printf("Enter Roll Number: ");
+    scanf("%d", &roll);
+
+    for (int i = 0; i < count; i++)
+    {
+        if (s[i].roll == roll)
+        {
+            printf("Roll number already exists!\n");
+            return;
+        }
+    }
+
+    s[count].roll = roll;
+
+    printf("Enter Name (one word): ");
+    scanf("%49s", s[count].name);
+
+    printf("Enter Department (one word): ");
+    scanf("%29s", s[count].department);
+
+    printf("Enter Year: ");
+    scanf("%d", &s[count].year);
+
+    printf("Enter Marks: ");
+    scanf("%f", &s[count].marks);
+
+    if (s[count].marks < 0 || s[count].marks > 100)
+    {
+        printf("Invalid marks!\n");
+        return;
+    }
+
+    s[count].grade[0] = getGrade(s[count].marks);
+    s[count].grade[1] = '\0';
+
+    count++;
+
+    saveRecords();
+
+    printf("Student added successfully!\n");
+}
+
+// Display all students
+void displayStudents()
+{
+    if (count == 0)
+    {
+        printf("No student records found!\n");
+        return;
+    }
+
+    for (int i = 0; i < count; i++)
+    {
+        printf("\nRoll Number: %d", s[i].roll);
+        printf("\nName: %s", s[i].name);
+        printf("\nDepartment: %s", s[i].department);
+        printf("\nYear: %d", s[i].year);
+        printf("\nMarks: %.2f", s[i].marks);
+        printf("\nGrade: %s\n", s[i].grade);
+    }
+}
+
+// Search student
+void searchStudent()
+{
+    int roll, found = 0;
+
+    printf("Enter Roll Number to search: ");
+    scanf("%d", &roll);
+
+    for (int i = 0; i < count; i++)
+    {
+        if (s[i].roll == roll)
+        {
+            printf("\nStudent Found!");
+            printf("\nName: %s", s[i].name);
+            printf("\nDepartment: %s", s[i].department);
+            printf("\nYear: %d", s[i].year);
+            printf("\nMarks: %.2f", s[i].marks);
+            printf("\nGrade: %s\n", s[i].grade);
+
+            found = 1;
+            break;
+        }
+    }
+
+    if (!found)
+        printf("Student not found!\n");
+}
+
+// Update student
+void updateStudent()
+{
+    int roll, found = 0;
+
+    printf("Enter Roll Number to update: ");
+    scanf("%d", &roll);
+
+    for (int i = 0; i < count; i++)
+    {
+        if (s[i].roll == roll)
+        {
+            printf("Enter New Name: ");
+            scanf("%49s", s[i].name);
+
+            printf("Enter New Department: ");
+            scanf("%29s", s[i].department);
+
+            printf("Enter New Year: ");
+            scanf("%d", &s[i].year);
+
+            printf("Enter New Marks: ");
+            scanf("%f", &s[i].marks);
+
+            if (s[i].marks < 0 || s[i].marks > 100)
+            {
+                printf("Invalid marks!\n");
+                return;
+            }
+
+            s[i].grade[0] = getGrade(s[i].marks);
+            s[i].grade[1] = '\0';
+
+            saveRecords();
+
+            printf("Record updated successfully!\n");
+            found = 1;
+            break;
+        }
+    }
+
+    if (!found)
+        printf("Student not found!\n");
+}
+
+// Delete student
+void deleteStudent()
+{
+    int roll, found = 0;
+
+    printf("Enter Roll Number to delete: ");
+    scanf("%d", &roll);
+
+    for (int i = 0; i < count; i++)
+    {
+        if (s[i].roll == roll)
+        {
+            for (int j = i; j < count - 1; j++)
+            {
+                s[j] = s[j + 1];
+            }
+
+            count--;
+            saveRecords();
+
+            printf("Record deleted successfully!\n");
+            found = 1;
+            break;
+        }
+    }
+
+    if (!found)
+        printf("Student not found!\n");
+}
+
+// Count students
+void countStudents()
+{
+    static int calls = 0;
+    calls++;
+
+    printf("Total Students: %d\n", count);
+}
+
+// Filter by marks
+void filterStudents()
+{
+    float mark;
+    int found = 0;
+
+    printf("Enter minimum marks: ");
+    scanf("%f", &mark);
+
+    for (int i = 0; i < count; i++)
+    {
+        if (s[i].marks > mark)
+        {
+            printf("\nRoll: %d", s[i].roll);
+            printf("\nName: %s", s[i].name);
+            printf("\nMarks: %.2f\n", s[i].marks);
+            found = 1;
+        }
+    }
+
+    if (!found)
+        printf("No students found!\n");
+}
+
+// Read text file using fscanf
+void readTextFile()
+{
+    FILE *fp;
+    struct Student temp;
+
+    fp = fopen("students.txt", "r");
+
+    if (fp == NULL)
+    {
+        printf("Text file not found!\n");
+        return;
+    }
+
+    printf("\nRecords from Text File:\n");
+
+    while (fscanf(fp, "%d %49s %29s %d %f %4s",
+                  &temp.roll, temp.name,
+                  temp.department, &temp.year,
+                  &temp.marks, temp.grade) == 6)
+    {
+        printf("\n%d %s %s %d %.2f %s\n",
+               temp.roll, temp.name,
+               temp.department, temp.year,
+               temp.marks, temp.grade);
+    }
+
+    fclose(fp);
+}
+
+int main()
+{
+    int choice;
+
+    s = calloc(capacity, sizeof(struct Student));
+
+    if (s == NULL)
+    {
+        printf("Memory allocation failed!\n");
+        return 1;
+    }
+
+    loadRecords();
+
+    do
+    {
+        printf("\n===== STUDENT RECORD MANAGEMENT =====\n");
+        printf("1. Add Student\n");
+        printf("2. Display All Students\n");
+        printf("3. Search Student\n");
+        printf("4. Update Student\n");
+        printf("5. Delete Student\n");
+        printf("6. Count Total Students\n");
+        printf("7. Filter by Marks\n");
+        printf("8. Display Text File\n");
+        printf("9. Exit\n");
+
+        printf("\nEnter your choice: ");
+        scanf("%d", &choice);
+
+        switch (choice)
+        {
+            case 1:
+                addStudent();
+                break;
+
+            case 2:
+                displayStudents();
+                break;
+
+            case 3:
+                searchStudent();
+                break;
+
+            case 4:
+                updateStudent();
+                break;
+
+            case 5:
+                deleteStudent();
+                break;
+
+            case 6:
+                countStudents();
+                break;
+
+            case 7:
+                filterStudents();
+                break;
+
+            case 8:
+                readTextFile();
+                break;
+
+            case 9:
+                saveRecords();
+                free(s);
+                printf("Program exited successfully!\n");
+                break;
+
+            default:
+                printf("Invalid choice!\n");
+        }
+
+    } while (choice != 9);
+
+    return 0;
+}
